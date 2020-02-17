@@ -1,0 +1,182 @@
+import os from 'os';
+import fs from 'fs';
+
+import { SMTPServer } from 'smtp-server';
+
+import { simpleParser } from 'mailparser';
+
+import nodemailer from 'nodemailer';
+
+const listenHost = process.env.LISTEN_HOST;
+const listenPort = process.env.LISTEN_PORT ? +process.env.LISTEN_PORT : 8465;
+
+const listenSecured = process.env.LISTEN_SECURED == 1;
+const listenKeyPath = process.env.LISTEN_KEY_PATH;
+const listenCertPath = process.env.LISTEN_CERT_PATH;
+
+const listenAuthRequired = process.env.LISTEN_AUTH_REQUIRED == 1;
+const listenUsername = process.env.LISTEN_USER;
+const listenPassword = process.env.LISTEN_PASS;
+const listenServerName = process.env.LISTEN_SERVER_NAME || os.hostname();
+const listenBanner = process.env.LISTEN_BANNER;
+
+const listenMaxSize = process.env.LISTEN_MAX_SIZE
+  ? +process.env.LISTEN_MAX_SIZE
+  : Infinity;
+
+const listenSizeHidden = process.env.LISTEN_SIZE_HIDDEN == 1;
+
+const listenMaxClients = process.env.LISTEN_MAX_CLIENTS
+  ? +process.env.LISTEN_MAX_CLIENTS
+  : 50;
+
+const listenSocketTimeout = process.env.LISTEN_SOCKET_TIMEOUT
+  ? +process.env.LISTEN_SOCKET_TIMEOUT
+  : 60000;
+
+const listenCloseTimeout = process.env.LISTEN_CLOSE_TIMEOUT
+  ? +process.env.LISTEN_CLOSE_TIMEOUT
+  : 30000;
+
+const sendFrom = process.env.SEND_FROM;
+
+const sendGMail = process.env.SEND_GMAIL == 1;
+
+const sendHost = process.env.SEND_HOST;
+const sendPort = process.env.SEND_PORT ? +process.env.SEND_PORT : 25;
+
+const sendUsername = process.env.SEND_USER;
+const sendPassword = process.env.SEND_PASS;
+
+const sendClientId = process.env.SEND_CLIENT_ID;
+const sendClientSecret = process.env.SEND_CLIENT_SECRET;
+const sendRefreshToken = process.env.SEND_REFRESH_TOKEN;
+const sendAccessUrl = process.env.SEND_ACCESS_URL;
+
+const sendPooling = process.env.SEND_POOLING == 1;
+
+const sendRateDelta = process.env.SEND_RATE_DELTA
+  ? +process.env.SEND_RATE_DELTA
+  : 60000;
+
+const sendRateLimit = process.env.SEND_RATE_LIMIT
+  ? +process.env.SEND_RATE_LIMIT
+  : 75;
+
+const sendMaxConnections = process.env.SEND_MAX_CONNECTIONS
+  ? +process.env.SEND_MAX_CONNECTIONS
+  : 5;
+
+const sendMaxMessagesPerConnection = process.env
+  .SEND_MAX_MESSAGES_PER_CONNECTION
+  ? +process.env.SEND_MAX_MESSAGES_PER_CONNECTION
+  : 100;
+
+const transport = nodemailer.createTransport({
+  host: sendHost,
+  port: sendPort,
+  secure: true, // use TLS
+  requireTLS: true,
+  tls: {
+    rejectUnauthorized: false // Do not fail on invalid certs
+  },
+  auth: {
+    type: sendGMail ? 'oauth2' : 'login',
+    user: sendUsername,
+    pass: sendPassword,
+    clientId: sendClientId,
+    clentSecret: sendClientSecret,
+    refreshToken: sendRefreshToken,
+    accessUrl: sendAccessUrl
+  },
+  pool: sendPooling,
+  maxConnections: sendMaxConnections,
+  maxMessages: sendMaxMessagesPerConnection,
+  rateDelta: sendRateDelta,
+  rateLimit: sendRateLimit
+});
+
+const server = new SMTPServer({
+  secure: listenSecured,
+  key: listenSecured ? fs.readFileSync(listenKeyPath) : null,
+  cert: listenSecured ? fs.readFileSync(listenCertPath) : null,
+  name: listenServerName,
+  banner: listenBanner,
+  size: listenMaxSize,
+  hideSize: listenSizeHidden,
+  authMethods: ['PLAIN', 'LOGIN', 'XOAUTH2'],
+  authOptional: !listenAuthRequired,
+  allowInsecureAuth: listenAuthRequired && !listenSecured,
+  disabledCommands: [],
+  disableReverseLookup: true,
+  logger: true,
+  maxClients: listenMaxClients,
+  socketTimeout: listenSocketTimeout,
+  closeTimeout: listenCloseTimeout,
+
+  onAuth(auth, session, callback) {
+    if (listenAuthRequired) {
+      if (
+        auth.username !== listenUsername ||
+        auth.password !== listenPassword
+      ) {
+        if (auth.method === 'XOAUTH2') {
+          return callback(null, {
+            data: {
+              status: '401',
+              schemes: 'bearer mac',
+              scope: 'my_smtp_access_scope_name'
+            }
+          });
+        }
+
+        return callback(new Error('Invalid username or password.'));
+      }
+    }
+
+    callback(null, { user: listenUsername });
+  },
+
+  onData(stream, session, callback) {
+    simpleParser(stream)
+      .then(data => {
+        data.from = sendFrom;
+
+        if (data.to && data.to.text) {
+          data.to = data.to.text;
+        }
+
+        if (data.cc && data.cc.text) {
+          data.cc = data.cc.text;
+        }
+
+        if (data.bcc && data.bcc.text) {
+          data.bcc = data.bcc.text;
+        }
+
+        return transport
+          .sendMail(data)
+          .then(result => callback())
+          .catch(reason => {
+            console.error('Error on sendMail:', reason);
+
+            callback(reason);
+          });
+      })
+      .catch(reason => {
+        console.error('Error on simpleParser:', reason);
+
+        callback(reason);
+      });
+  }
+});
+
+server.on('error', err => {
+  console.error('Error on SMTPServer:', err);
+});
+
+server.listen(listenPort, listenHost, err => {
+  if (err) {
+    console.error('Error on SMTPServer startup:', err);
+  }
+});
