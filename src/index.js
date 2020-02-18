@@ -40,7 +40,7 @@ const listenCloseTimeout = process.env.LISTEN_CLOSE_TIMEOUT
 
 const sendFrom = process.env.SEND_FROM;
 
-const sendGMail = process.env.SEND_GMAIL == 1;
+const sendAuthType = process.env.SEND_AUTH_TYPE || 'login';
 
 const sendHost = process.env.SEND_HOST;
 const sendPort = process.env.SEND_PORT ? +process.env.SEND_PORT : 25;
@@ -81,7 +81,7 @@ const transport = nodemailer.createTransport({
     rejectUnauthorized: false // Do not fail on invalid certs
   },
   auth: {
-    type: sendGMail ? 'oauth2' : 'login',
+    type: sendAuthType,
     user: sendUsername,
     pass: sendPassword,
     clientId: sendClientId,
