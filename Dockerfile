@@ -5,7 +5,7 @@ WORKDIR /src
 
 COPY . .
 
-RUN npm set unsafe-perm true
+USER root
 
 RUN rm -f yarn.lock
 
