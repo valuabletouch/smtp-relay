@@ -8,7 +8,7 @@ import { simpleParser } from 'mailparser';
 import nodemailer from 'nodemailer';
 
 const listenHost = process.env.LISTEN_HOST;
-const listenPort = process.env.LISTEN_PORT ? +process.env.LISTEN_PORT : 8465;
+const listenPort = process.env.LISTEN_PORT ? +process.env.LISTEN_PORT : 25;
 
 const listenSecured = process.env.LISTEN_SECURED == 1;
 const listenKeyPath = process.env.LISTEN_KEY_PATH;
