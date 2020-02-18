@@ -47,8 +47,8 @@ Variable | Default Value | Description
 **LISTEN_KEY_PATH** | `null` | File path for key file
 **LISTEN_CERT_PATH** | `null` | File path for certificate file
 **LISTEN_AUTH_REQUIRED** | `0` | If set to 1 then relay server will require authentication. `LISTEN_USER` and `LISTEN_PASS` values must be supported
-**LISTEN_USER** | `renders` | Relay server authentication username
-**LISTEN_PASS** | `renders` | Relay server authentication password
+**LISTEN_USER** | `null` | Relay server authentication username
+**LISTEN_PASS** | `null` | Relay server authentication password
 **LISTEN_SERVER_NAME** | `os.hostname()` | Relay server hostname, used for identifying to the client
 **LISTEN_BANNER** | `null` | Relay server greeting message. This message is appended to the default ESMTP response.
 **LISTEN_MAX_SIZE** | `Infinity` | Relay server maximum allowed message size in bytes
@@ -60,8 +60,8 @@ Variable | Default Value | Description
 **SEND_AUTH_TYPE** | `login` | Send e-mail authetication type
 **SEND_HOST** | `null` | Send e-mail SMTP host
 **SEND_PORT** | `25` | Send e-mail SMTP port
-**SEND_USER** | `renders` | Send e-mail authentication username
-**SEND_PASS** | `renders` | Send e-mail authentication password
+**SEND_USER** | `null` | Send e-mail authentication username
+**SEND_PASS** | `null` | Send e-mail authentication password
 **SEND_CLIENT_ID** | `null` | Send e-mail authentication client_id, usually required when authetication type is `oauth2`
 **SEND_CLIENT_SECRET** | `null` | Send e-mail authentication client_secret, usually required when authetication type is `oauth2`
 **SEND_REFRESH_TOKEN** | `null` | Send e-mail authentication refresh_token, used when authetication type is `oauth2`
