@@ -2,14 +2,18 @@
 A simple SMTP server which works as a relay.
 
 ## Usage
+Install dependencies:
 ```
 yarn install
-
+```
+Start server:
+```
 yarn start
 ```
+You need to set required environment variables before starting server or set the variables on [`src/index.js`](/src/index.js) directly.
 
-## Docker
-You can use this sample docker-compose file
+## Docker [![Build Status](https://img.shields.io/docker/cloud/build/valuabletouch/smtp-relay)](https://hub.docker.com/r/valuabletouch/smtp-relay/builds)
+You can use this sample docker-compose file:
 ```yaml
 version: '3.5'
 
