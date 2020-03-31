@@ -45,6 +45,9 @@ const sendAuthType = process.env.SEND_AUTH_TYPE || 'login';
 const sendHost = process.env.SEND_HOST;
 const sendPort = process.env.SEND_PORT ? +process.env.SEND_PORT : 25;
 
+const sendUseSSL = process.env.SEND_USE_SSL == 1;
+const sendUseTLS = process.env.SEND_USE_TLS == 1;
+
 const sendUsername = process.env.SEND_USER;
 const sendPassword = process.env.SEND_PASS;
 
@@ -52,6 +55,8 @@ const sendClientId = process.env.SEND_CLIENT_ID;
 const sendClientSecret = process.env.SEND_CLIENT_SECRET;
 const sendRefreshToken = process.env.SEND_REFRESH_TOKEN;
 const sendAccessUrl = process.env.SEND_ACCESS_URL;
+const sendServiceClientId = process.env.SEND_SERVICE_CLIENT_ID;
+const sendServiceClientPrivateKey = process.env.SEND_SERVICE_CLIENT_PRIVATE_KEY;
 
 const sendPooling = process.env.SEND_POOLING == 1;
 
@@ -72,11 +77,13 @@ const sendMaxMessagesPerConnection = process.env
   ? +process.env.SEND_MAX_MESSAGES_PER_CONNECTION
   : 100;
 
+const sendDebug = process.env.SEND_DEBUG == 1;
+
 const transport = nodemailer.createTransport({
   host: sendHost,
   port: sendPort,
-  secure: true, // use TLS
-  requireTLS: true,
+  secure: sendUseSSL, // use TLS
+  requireTLS: sendUseTLS, // force the client to use STARTTLS
   tls: {
     rejectUnauthorized: false // Do not fail on invalid certs
   },
@@ -87,13 +94,16 @@ const transport = nodemailer.createTransport({
     clientId: sendClientId,
     clentSecret: sendClientSecret,
     refreshToken: sendRefreshToken,
-    accessUrl: sendAccessUrl
+    accessUrl: sendAccessUrl,
+    serviceClient: sendServiceClientId,
+    privateKey: sendServiceClientPrivateKey
   },
   pool: sendPooling,
   maxConnections: sendMaxConnections,
   maxMessages: sendMaxMessagesPerConnection,
   rateDelta: sendRateDelta,
-  rateLimit: sendRateLimit
+  rateLimit: sendRateLimit,
+  debug: sendDebug
 });
 
 const server = new SMTPServer({
