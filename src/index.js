@@ -11,6 +11,10 @@ const listenHost = process.env.LISTEN_HOST;
 const listenPort = process.env.LISTEN_PORT ? +process.env.LISTEN_PORT : 25;
 
 const listenSecured = process.env.LISTEN_SECURED == 1;
+
+const listenKey = process.env.LISTEN_KEY;
+const listenCert = process.env.LISTEN_CERT;
+
 const listenKeyPath = process.env.LISTEN_KEY_PATH;
 const listenCertPath = process.env.LISTEN_CERT_PATH;
 
@@ -108,8 +112,33 @@ const transport = nodemailer.createTransport({
 
 const server = new SMTPServer({
   secure: listenSecured,
-  key: listenSecured ? fs.readFileSync(listenKeyPath) : null,
-  cert: listenSecured ? fs.readFileSync(listenCertPath) : null,
+
+  key:
+    listenSecured
+      ? (
+        listenKey
+          ? listenKey
+          : (
+            listenKeyPath
+              ? fs.readFileSync(listenKeyPath)
+              : null
+          )
+      )
+      : null,
+
+  cert:
+    listenSecured
+      ? (
+        listenCert
+          ? listenCert
+          : (
+            listenCertPath
+              ? fs.readFileSync(listenCertPath)
+              : null
+          )
+      )
+      : null,
+
   name: listenServerName,
   banner: listenBanner,
   size: listenMaxSize,
