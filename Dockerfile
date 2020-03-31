@@ -29,3 +29,5 @@ COPY --from=build /src/.babelrc .
 USER root
 
 ENTRYPOINT ["yarn", "start"]
+
+CMD []
