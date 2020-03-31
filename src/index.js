@@ -137,37 +137,39 @@ const server = new SMTPServer({
     callback(null, { user: listenUsername });
   },
 
-  onData(stream, session, callback) {
-    simpleParser(stream)
-      .then(data => {
-        data.from = sendFrom;
+  async onData(stream, session, callback) {
+    try {
+      const data = await simpleParser(stream);
 
-        if (data.to && data.to.text) {
-          data.to = data.to.text;
-        }
+      data.from = sendFrom;
 
-        if (data.cc && data.cc.text) {
-          data.cc = data.cc.text;
-        }
+      if (data.to && data.to.text) {
+        data.to = data.to.text;
+      }
 
-        if (data.bcc && data.bcc.text) {
-          data.bcc = data.bcc.text;
-        }
+      if (data.cc && data.cc.text) {
+        data.cc = data.cc.text;
+      }
 
-        return transport
-          .sendMail(data)
-          .then(result => callback())
-          .catch(reason => {
-            console.error('Error on sendMail:', reason);
+      if (data.bcc && data.bcc.text) {
+        data.bcc = data.bcc.text;
+      }
 
-            callback(reason);
-          });
-      })
-      .catch(reason => {
-        console.error('Error on simpleParser:', reason);
+      try {
+        await transport.sendMail(data);
+
+        callback();
+      }
+      catch (reason) {
+        console.error('Error on sendMail:', reason);
 
         callback(reason);
-      });
+      }
+    } catch (reason) {
+      console.error('Error on simpleParser:', reason);
+
+      callback(reason);
+    }
   }
 });
 
