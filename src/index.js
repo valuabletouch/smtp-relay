@@ -2,15 +2,21 @@ import os from 'os';
 import fs from 'fs';
 
 import { SMTPServer } from 'smtp-server';
-
 import { simpleParser } from 'mailparser';
+import { createTransport } from 'nodemailer';
 
-import nodemailer from 'nodemailer';
+function getNumber(val, defaultVal) {
+  return val ? +val : defaultVal;
+}
+
+function getBoolean(val) {
+  return   val == 1 || val === 'true' || val === true;
+}
 
 const listenHost = process.env.LISTEN_HOST;
-const listenPort = process.env.LISTEN_PORT ? +process.env.LISTEN_PORT : 25;
+const listenPort = getNumber(process.env.LISTEN_PORT, 25);
 
-const listenSecured = process.env.LISTEN_SECURED == 1;
+const listenSecured = getBoolean(process.env.LISTEN_SECURED);
 
 const listenKey = process.env.LISTEN_KEY;
 const listenCert = process.env.LISTEN_CERT;
@@ -18,39 +24,30 @@ const listenCert = process.env.LISTEN_CERT;
 const listenKeyPath = process.env.LISTEN_KEY_PATH;
 const listenCertPath = process.env.LISTEN_CERT_PATH;
 
-const listenAuthRequired = process.env.LISTEN_AUTH_REQUIRED == 1;
+const listenAuthRequired = getBoolean(process.env.LISTEN_AUTH_REQUIRED);
+
 const listenUsername = process.env.LISTEN_USER;
 const listenPassword = process.env.LISTEN_PASS;
 const listenServerName = process.env.LISTEN_SERVER_NAME || os.hostname();
 const listenBanner = process.env.LISTEN_BANNER;
 
-const listenMaxSize = process.env.LISTEN_MAX_SIZE
-  ? +process.env.LISTEN_MAX_SIZE
-  : Infinity;
+const listenMaxSize = getNumber(process.env.LISTEN_MAX_SIZE, Infinity);
+const listenSizeHidden = getBoolean(process.env.LISTEN_SIZE_HIDDEN);
 
-const listenSizeHidden = process.env.LISTEN_SIZE_HIDDEN == 1;
+const listenMaxClients = getNumber(process.env.LISTEN_MAX_CLIENTS, 50);
 
-const listenMaxClients = process.env.LISTEN_MAX_CLIENTS
-  ? +process.env.LISTEN_MAX_CLIENTS
-  : 50;
-
-const listenSocketTimeout = process.env.LISTEN_SOCKET_TIMEOUT
-  ? +process.env.LISTEN_SOCKET_TIMEOUT
-  : 60000;
-
-const listenCloseTimeout = process.env.LISTEN_CLOSE_TIMEOUT
-  ? +process.env.LISTEN_CLOSE_TIMEOUT
-  : 30000;
+const listenSocketTimeout = getNumber(process.env.LISTEN_SOCKET_TIMEOUT, 60000);
+const listenCloseTimeout = getNumber(process.env.LISTEN_CLOSE_TIMEOUT, 30000);
 
 const sendFrom = process.env.SEND_FROM;
 
 const sendAuthType = process.env.SEND_AUTH_TYPE || 'login';
 
 const sendHost = process.env.SEND_HOST;
-const sendPort = process.env.SEND_PORT ? +process.env.SEND_PORT : 25;
+const sendPort = getNumber(process.env.SEND_PORT, 25);
 
-const sendUseSSL = process.env.SEND_USE_SSL == 1;
-const sendUseTLS = process.env.SEND_USE_TLS == 1;
+const sendUseSSL = getBoolean(process.env.SEND_USE_SSL);
+const sendUseTLS = getBoolean(process.env.SEND_USE_TLS);
 
 const sendUsername = process.env.SEND_USER;
 const sendPassword = process.env.SEND_PASS;
@@ -62,31 +59,38 @@ const sendAccessUrl = process.env.SEND_ACCESS_URL;
 const sendServiceClientId = process.env.SEND_SERVICE_CLIENT_ID;
 const sendServiceClientPrivateKey = process.env.SEND_SERVICE_CLIENT_PRIVATE_KEY;
 
-const sendPooling = process.env.SEND_POOLING == 1;
+const sendPooling = getBoolean(process.env.SEND_POOLING);
 
-const sendRateDelta = process.env.SEND_RATE_DELTA
-  ? +process.env.SEND_RATE_DELTA
-  : 60000;
+const sendRateDelta = getNumber(process.env.SEND_RATE_DELTA, 60000);
+const sendRateLimit = getNumber(process.env.SEND_RATE_LIMIT, 75);
+const sendMaxConnections = getNumber(process.env.SEND_MAX_CONNECTIONS, 5);
+const sendMaxMessagesPerConnection = getNumber(process.env.SEND_MAX_MESSAGES_PER_CONNECTION, 100);
 
-const sendRateLimit = process.env.SEND_RATE_LIMIT
-  ? +process.env.SEND_RATE_LIMIT
-  : 75;
+const sendDebug = getBoolean(process.env.SEND_DEBUG);
 
-const sendMaxConnections = process.env.SEND_MAX_CONNECTIONS
-  ? +process.env.SEND_MAX_CONNECTIONS
-  : 5;
+let serverKey = null;
+let serverCert = null;
 
-const sendMaxMessagesPerConnection = process.env
-  .SEND_MAX_MESSAGES_PER_CONNECTION
-  ? +process.env.SEND_MAX_MESSAGES_PER_CONNECTION
-  : 100;
+if (listenSecured) {
+  if (listenKey) {
+    serverKey = listenKey;
+  }
+  else if (listenKeyPath) {
+    serverKey = fs.readFileSync(listenKeyPath);
+  }
 
-const sendDebug = process.env.SEND_DEBUG == 1;
+  if (listenCert) {
+    serverCert = listenCert;
+  }
+  else if (listenCertPath) {
+    serverCert = fs.readFileSync(listenCertPath);
+  }
+}
 
-const transport = nodemailer.createTransport({
+const transport = createTransport({
   host: sendHost,
   port: sendPort,
-  secure: sendUseSSL, // use TLS
+  secure: sendUseSSL, // use SSL
   requireTLS: sendUseTLS, // force the client to use STARTTLS
   tls: {
     rejectUnauthorized: false // Do not fail on invalid certs
@@ -112,33 +116,8 @@ const transport = nodemailer.createTransport({
 
 const server = new SMTPServer({
   secure: listenSecured,
-
-  key:
-    listenSecured
-      ? (
-        listenKey
-          ? listenKey
-          : (
-            listenKeyPath
-              ? fs.readFileSync(listenKeyPath)
-              : null
-          )
-      )
-      : null,
-
-  cert:
-    listenSecured
-      ? (
-        listenCert
-          ? listenCert
-          : (
-            listenCertPath
-              ? fs.readFileSync(listenCertPath)
-              : null
-          )
-      )
-      : null,
-
+  key: serverKey,
+  cert: serverCert,
   name: listenServerName,
   banner: listenBanner,
   size: listenMaxSize,
@@ -164,7 +143,7 @@ const server = new SMTPServer({
             data: {
               status: '401',
               schemes: 'bearer mac',
-              scope: 'my_smtp_access_scope_name'
+              scope: 'email'
             }
           });
         }
@@ -182,15 +161,15 @@ const server = new SMTPServer({
 
       data.from = sendFrom;
 
-      if (data.to && data.to.text) {
+      if (data.to?.text) {
         data.to = data.to.text;
       }
 
-      if (data.cc && data.cc.text) {
+      if (data.cc?.text) {
         data.cc = data.cc.text;
       }
 
-      if (data.bcc && data.bcc.text) {
+      if (data.bcc?.text) {
         data.bcc = data.bcc.text;
       }
 
