@@ -8,11 +8,15 @@
     "start": "babel-node src/index.js"
   },
   "dependencies": {
-    "@babel/core": "^7.9.0",
-    "@babel/node": "^7.8.7",
-    "@babel/preset-env": "^7.9.0",
-    "mailparser": "^2.7.7",
-    "nodemailer": "^6.4.6",
-    "smtp-server": "^3.6.0"
+    "mailparser": "^3.3.1",
+    "nodemailer": "^6.6.3",
+    "smtp-server": "^3.9.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.5",
+    "@babel/node": "^7.15.4",
+    "@babel/preset-env": "^7.15.6",
+    "core-js": "^3.17.3",
+    "regenerator-runtime": "^0.13.9"
   }
 }

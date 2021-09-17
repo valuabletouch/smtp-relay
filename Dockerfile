@@ -5,11 +5,7 @@ WORKDIR /src
 
 COPY . .
 
-USER root
-
-RUN rm -f yarn.lock
-
-RUN yarn install --ignore-engines
+RUN npm i
 
 # Image
 FROM node
@@ -24,10 +20,8 @@ COPY --from=build /src/node_modules ./node_modules
 
 COPY --from=build /src/package.json .
 
-COPY --from=build /src/.babelrc .
+COPY --from=build /src/babel.config.js .
 
-USER root
-
-ENTRYPOINT ["yarn", "start"]
+ENTRYPOINT ["npm", "start"]
 
 CMD []
