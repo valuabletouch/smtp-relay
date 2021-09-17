@@ -8,12 +8,13 @@
 .gitignore
 **/.gitignore
 
-.vs
-.vscode
-**/.vscode
+.vs/
+.vscode/
 
-**/node_modules
+node_modules/
 
-./docker
-
+DockerFile
 **/DockerFile
+
+.DS_Store
+**/.DS_Store
